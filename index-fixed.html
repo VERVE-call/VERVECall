@@ -1,0 +1,1919 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+  <title>TALKSY</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.22.1.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --g1:#D4AF37; --g2:#FFD700; --g3:#B8860B;
+      --gold:linear-gradient(135deg,#D4AF37 0%,#FFD700 50%,#B8860B 100%);
+      --gg:0 0 24px rgba(212,175,55,.4);
+      --ggs:0 0 12px rgba(212,175,55,.25);
+      --red:#FF4444; --green:#00C853;
+      --r:16px; --t:all .22s cubic-bezier(.4,0,.2,1);
+    }
+    [data-theme="dark"] {
+      --bg:#080808; --bg2:#0E0E0E; --card:#141414; --card2:#1A1A1A;
+      --border:#242424; --border2:#2E2E2E;
+      --text:#F5F5F5; --text2:#9A9A9A; --text3:#555;
+      --input:#111; --nav:#0E0E0E;
+      --overlay:rgba(0,0,0,.88);
+    }
+    [data-theme="light"] {
+      --bg:#F8F8F8; --bg2:#FFF; --card:#FFF; --card2:#F2F2F2;
+      --border:#E8E8E8; --border2:#D8D8D8;
+      --text:#0A0A0A; --text2:#666; --text3:#AAA;
+      --input:#F0F0F0; --nav:#FFF;
+      --overlay:rgba(0,0,0,.7);
+    }
+    html,body { height:100%; width:100%; font-family:'Inter',system-ui,sans-serif; background:#000; -webkit-font-smoothing:antialiased; overflow:hidden; }
+    #app { width:100%; max-width:430px; height:100dvh; margin:0 auto; background:var(--bg); position:relative; overflow:hidden; display:flex; flex-direction:column; }
+
+    /* GOLD */
+    .gt { background:var(--gold); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .gb { background:var(--gold); border:none; cursor:pointer; font-family:inherit; font-weight:700; transition:var(--t); box-shadow:var(--gg); }
+    .gb:hover { opacity:.88; transform:translateY(-1px); }
+    .gb:active { transform:scale(.97); opacity:.8; }
+    .gb:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+
+    /* SCREENS */
+    .screen { position:absolute; inset:0; display:none; flex-direction:column; background:var(--bg); }
+    .screen.show { display:flex; }
+
+    /* SPLASH */
+    #splash { background:#000; align-items:center; justify-content:center; }
+    .s-orb { width:136px; height:136px; border-radius:50%; background:var(--gold); display:flex; align-items:center; justify-content:center; box-shadow:0 0 60px rgba(212,175,55,.5),0 0 120px rgba(212,175,55,.2); animation:orbP 2.4s ease-in-out infinite; margin-bottom:32px; }
+    .s-orb-i { width:92px; height:92px; border-radius:50%; background:#000; display:flex; align-items:center; justify-content:center; }
+    @keyframes orbP { 0%,100%{transform:scale(1);box-shadow:0 0 60px rgba(212,175,55,.5),0 0 120px rgba(212,175,55,.2)} 50%{transform:scale(1.04);box-shadow:0 0 80px rgba(212,175,55,.7),0 0 160px rgba(212,175,55,.3)} }
+    .s-logo { font-size:54px; font-weight:900; letter-spacing:-2px; margin-bottom:10px; }
+    .s-tag { color:#555; font-size:12px; font-weight:500; letter-spacing:4px; text-transform:uppercase; }
+    .s-bar { width:0; height:2px; border-radius:2px; background:var(--gold); margin-top:48px; animation:loadBar 1.8s ease forwards .3s; box-shadow:var(--ggs); }
+    @keyframes loadBar { to{width:120px} }
+
+    /* AUTH */
+    #auth { overflow-y:auto; }
+    .aw { padding:0 24px 48px; }
+    .at { text-align:center; padding:52px 0 36px; }
+    .a-logo { font-size:40px; font-weight:900; letter-spacing:-1.5px; }
+    .a-sub { color:var(--text2); font-size:14px; margin-top:6px; }
+    .tab-row { display:flex; background:var(--card2); border-radius:14px; padding:4px; margin-bottom:28px; border:1px solid var(--border); }
+    .tab-btn { flex:1; padding:11px 0; text-align:center; font-size:14px; font-weight:600; border-radius:11px; cursor:pointer; transition:var(--t); color:var(--text2); border:none; background:transparent; font-family:inherit; }
+    .tab-btn.on { background:var(--card); color:var(--text); box-shadow:0 2px 12px rgba(0,0,0,.25); }
+    .fp { display:none; }
+    .fp.on { display:block; }
+    .fld { margin-bottom:14px; }
+    .fld-lbl { font-size:11px; font-weight:700; color:var(--text2); margin-bottom:7px; display:block; letter-spacing:.7px; text-transform:uppercase; }
+    .fld-inp { width:100%; padding:15px 16px; background:var(--input); border:1.5px solid var(--border); border-radius:14px; color:var(--text); font-size:15px; font-family:inherit; transition:var(--t); outline:none; }
+    .fld-inp:focus { border-color:var(--g1); background:var(--bg2); box-shadow:0 0 0 4px rgba(212,175,55,.1); }
+    .fld-inp::placeholder { color:var(--text3); }
+    .fld-err { font-size:12px; color:var(--red); margin-top:5px; display:none; font-weight:500; }
+    .fld-err.on { display:block; }
+    .gen-err { font-size:13px; color:var(--red); margin-bottom:14px; font-weight:500; display:none; padding:10px 14px; background:rgba(255,68,68,.08); border-radius:10px; border:1px solid rgba(255,68,68,.2); }
+    .gen-err.on { display:block; }
+    .forgot { text-align:right; margin:-4px 0 18px; }
+    .forgot a { color:var(--g1); font-size:13px; text-decoration:none; font-weight:500; cursor:pointer; }
+    .auth-btn { width:100%; padding:16px; border-radius:14px; color:#000; font-size:15px; }
+
+    /* APP */
+    #app-shell { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .pages { flex:1; overflow:hidden; position:relative; }
+    .page { position:absolute; inset:0; display:none; flex-direction:column; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; background:var(--bg); }
+    .page.on { display:flex; }
+
+    /* NAV */
+    .nav { background:var(--nav); border-top:1px solid var(--border); padding:6px 0 calc(6px + env(safe-area-inset-bottom,0px)); display:flex; align-items:center; flex-shrink:0; position:relative; z-index:10; }
+    .nb { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; padding:6px 0; border:none; background:none; cursor:pointer; font-family:inherit; color:var(--text3); transition:var(--t); min-height:48px; }
+    .nb.on { color:var(--g1); }
+    .nb .lbl { font-size:10px; font-weight:600; }
+    .nb.on .lbl { color:var(--g1); }
+    .nav-fab { width:54px; height:54px; border-radius:50%; background:var(--gold); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-top:-18px; box-shadow:var(--gg); transition:var(--t); }
+    .nav-fab:hover { transform:scale(1.06); box-shadow:0 0 32px rgba(212,175,55,.6); }
+    .nav-fab:active { transform:scale(.94); }
+
+    /* PAGE HEADER */
+    .ph { display:flex; align-items:center; justify-content:space-between; padding:20px 20px 12px; flex-shrink:0; }
+    .ph-title { font-size:26px; font-weight:800; letter-spacing:-.5px; }
+    .ph-act { display:flex; gap:8px; }
+    .ibtn { width:40px; height:40px; border-radius:50%; background:var(--card2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text2); transition:var(--t); }
+    .ibtn:hover { background:var(--border2); color:var(--text); }
+    .ibtn:active { transform:scale(.9); }
+    .sec-lbl { font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:1.2px; padding:0 20px; margin-bottom:4px; }
+
+    /* CALL ITEMS */
+    .ci { display:flex; align-items:center; gap:14px; padding:13px 20px; cursor:pointer; transition:var(--t); }
+    .ci:hover { background:var(--card2); }
+    .ci:active { background:var(--card); }
+    .av-w { position:relative; flex-shrink:0; }
+    .av { border-radius:50%; background:var(--gold); display:flex; align-items:center; justify-content:center; font-weight:700; color:#000; overflow:hidden; flex-shrink:0; }
+    .av img { width:100%; height:100%; object-fit:cover; }
+    .pip-dot { width:12px; height:12px; border-radius:50%; position:absolute; bottom:1px; right:1px; border:2.5px solid var(--bg); background:var(--text3); }
+    .pip-dot.live { background:var(--g1); box-shadow:0 0 6px rgba(212,175,55,.5); }
+    .ci-info { flex:1; min-width:0; }
+    .ci-name { font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; }
+    .ci-meta { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text2); }
+    .ci-right { text-align:right; flex-shrink:0; }
+    .ci-time { font-size:11px; color:var(--text3); margin-bottom:4px; }
+    .tbadge { display:inline-flex; align-items:center; font-size:10px; font-weight:600; padding:2px 8px; border-radius:20px; }
+    .tbadge-v { background:rgba(212,175,55,.12); color:var(--g1); border:1px solid rgba(212,175,55,.25); }
+    .tbadge-a { background:rgba(154,154,154,.1); color:var(--text2); border:1px solid var(--border); }
+
+    /* EMPTY */
+    .empty { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 32px; text-align:center; gap:10px; }
+    .empty-ico { width:80px; height:80px; border-radius:50%; background:var(--card2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin-bottom:8px; color:var(--text3); }
+    .empty-t { font-size:16px; font-weight:700; color:var(--text); }
+    .empty-s { font-size:13px; color:var(--text2); line-height:1.5; }
+
+    /* SKELETON */
+    .skel { background:linear-gradient(90deg,var(--card2) 0%,var(--border2) 50%,var(--card2) 100%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .sk-row { display:flex; align-items:center; gap:14px; padding:13px 20px; }
+    .sk-av { width:48px; height:48px; border-radius:50%; flex-shrink:0; }
+    .sk-lines { flex:1; display:flex; flex-direction:column; gap:8px; }
+    .sk-a { height:13px; width:55%; border-radius:6px; }
+    .sk-b { height:11px; width:38%; border-radius:6px; }
+
+    /* CONTACTS */
+    .sw { padding:0 20px 12px; flex-shrink:0; }
+    .sbox { position:relative; background:var(--card2); border:1.5px solid var(--border); border-radius:14px; overflow:hidden; }
+    .sbox:focus-within { border-color:var(--g1); box-shadow:0 0 0 4px rgba(212,175,55,.08); }
+    .s-ico { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text3); pointer-events:none; }
+    .s-inp { width:100%; padding:12px 16px 12px 42px; background:transparent; border:none; outline:none; color:var(--text); font-size:14px; font-family:inherit; }
+    .s-inp::placeholder { color:var(--text3); }
+    .contact-row { display:flex; align-items:center; gap:14px; padding:12px 20px; cursor:pointer; transition:var(--t); }
+    .contact-row:hover { background:var(--card2); }
+    .contact-row:active { background:var(--card); }
+    .ct-info { flex:1; min-width:0; }
+    .ct-name { font-size:15px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ct-id { font-size:12px; color:var(--text3); margin-top:2px; }
+    .ct-btns { display:flex; gap:8px; }
+    .ct-btn { width:36px; height:36px; border-radius:50%; background:var(--card2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text2); transition:var(--t); }
+    .ct-btn:hover { background:var(--gold); color:#000; border-color:transparent; box-shadow:var(--ggs); }
+    .ct-btn:active { transform:scale(.88); }
+
+    /* ADD */
+    .add-card { margin:16px 20px; background:var(--card); border:1px solid var(--border); border-radius:20px; padding:24px; }
+    .add-title { font-size:20px; font-weight:800; margin-bottom:4px; }
+    .add-sub { font-size:13px; color:var(--text2); margin-bottom:22px; line-height:1.5; }
+    .big-inp { width:100%; padding:18px 16px; background:var(--input); border:1.5px solid var(--border); border-radius:14px; color:var(--text); font-size:28px; font-weight:800; font-family:inherit; letter-spacing:6px; text-align:center; outline:none; transition:var(--t); }
+    .big-inp:focus { border-color:var(--g1); background:var(--bg2); box-shadow:0 0 0 4px rgba(212,175,55,.1); }
+    .big-inp::placeholder { font-size:16px; letter-spacing:2px; color:var(--text3); font-weight:400; }
+    .add-res { margin-top:18px; background:var(--card2); border:1px solid var(--border); border-radius:16px; padding:16px; display:none; align-items:center; gap:14px; }
+    .add-res.on { display:flex; }
+    .add-res-info { flex:1; min-width:0; }
+    .add-res-name { font-size:16px; font-weight:700; }
+    .add-res-id { font-size:13px; color:var(--text2); margin-top:2px; }
+
+    /* PROFILE */
+    .prof-hero { background:var(--card); border-bottom:1px solid var(--border); padding:28px 20px 24px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+    .av-edit { position:relative; cursor:pointer; }
+    .av-edit-lbl { position:absolute; inset:0; border-radius:50%; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; opacity:0; transition:var(--t); }
+    .av-edit:hover .av-edit-lbl, .av-edit:active .av-edit-lbl { opacity:1; }
+    .pname-row { display:flex; align-items:center; gap:8px; }
+    .pname-inp { font-size:22px; font-weight:800; border:none; background:transparent; color:var(--text); font-family:inherit; text-align:center; outline:none; border-bottom:2px solid transparent; padding-bottom:2px; transition:var(--t); width:200px; max-width:240px; }
+    .pname-inp.edit { border-color:var(--g1); }
+    .pen-btn { background:none; border:none; cursor:pointer; color:var(--text3); padding:4px; transition:var(--t); }
+    .pen-btn:hover { color:var(--g1); }
+    .n-acts { display:none; gap:6px; }
+    .n-acts.on { display:flex; }
+    .n-save,.n-cancel { padding:5px 12px; border-radius:8px; border:none; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit; }
+    .n-save { background:var(--gold); color:#000; }
+    .n-cancel { background:var(--card2); color:var(--text); border:1px solid var(--border); }
+    .p-email { font-size:13px; color:var(--text2); }
+    .id-card { margin:16px 20px; background:var(--card); border:1.5px solid var(--g1); border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:12px; box-shadow:var(--ggs); }
+    .id-card-in { flex:1; }
+    .id-lbl { font-size:11px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+    .id-val { font-size:28px; font-weight:900; letter-spacing:4px; }
+    .copy-btn { width:38px; height:38px; border-radius:10px; background:var(--card2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text2); transition:var(--t); }
+    .copy-btn:hover { color:var(--g1); border-color:var(--g1); }
+    .stats-row { display:flex; gap:12px; margin:0 20px 16px; }
+    .stat-c { flex:1; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px; text-align:center; }
+    .stat-v { font-size:28px; font-weight:900; }
+    .stat-l { font-size:11px; color:var(--text2); margin-top:3px; font-weight:600; text-transform:uppercase; letter-spacing:.8px; }
+    .sgrp { margin:0 20px; background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+    .sett { display:flex; align-items:center; gap:14px; padding:16px; cursor:pointer; transition:var(--t); }
+    .sett:not(:last-child) { border-bottom:1px solid var(--border); }
+    .sett:hover { background:var(--card2); }
+    .sett-ico { width:38px; height:38px; border-radius:12px; background:var(--card2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text2); flex-shrink:0; }
+    .sett-lbl { flex:1; font-size:15px; font-weight:500; }
+    .sett-r { color:var(--text3); }
+    .tog { width:46px; height:26px; border-radius:13px; background:var(--border); position:relative; cursor:pointer; transition:var(--t); border:none; padding:0; }
+    .tog.on { background:var(--gold); box-shadow:var(--ggs); }
+    .tog::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:var(--t); }
+    .tog.on::after { left:23px; }
+    .so-btn { margin:16px 20px; width:calc(100% - 40px); padding:15px; border-radius:14px; background:transparent; border:1.5px solid rgba(255,68,68,.4); color:var(--red); font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:var(--t); display:block; }
+    .so-btn:hover { background:rgba(255,68,68,.08); border-color:var(--red); }
+    .so-btn:active { transform:scale(.97); }
+
+    /* BOTTOM SHEET */
+    .sh-bg { position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.65); backdrop-filter:blur(8px); display:none; align-items:flex-end; }
+    .sh-bg.on { display:flex; }
+    .sh { width:100%; max-width:430px; margin:0 auto; background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px)); transform:translateY(100%); transition:transform .36s cubic-bezier(.32,.72,0,1); }
+    .sh-bg.on .sh { transform:translateY(0); }
+    .sh-handle { width:40px; height:4px; border-radius:2px; background:var(--border2); margin:0 auto 22px; }
+    .sh-prof { display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:20px; }
+    .sh-name { font-size:22px; font-weight:800; }
+    .sh-id { font-size:13px; color:var(--text2); }
+    .sh-online { font-size:13px; font-weight:600; }
+    .sh-online.live { color:var(--g1); }
+    .sh-online.away { color:var(--text3); }
+    .sh-btns { display:flex; gap:10px; margin-bottom:14px; }
+    .sh-cta { flex:1; padding:15px; border-radius:14px; color:#000; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:8px; }
+    .sh-del { width:100%; padding:15px; border-radius:14px; background:transparent; border:1.5px solid rgba(255,68,68,.35); color:var(--red); font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; transition:var(--t); }
+    .sh-del:hover { background:rgba(255,68,68,.08); border-color:var(--red); }
+
+    /* INCOMING */
+    #inc-call { position:fixed; inset:0; z-index:100; display:none; flex-direction:column; align-items:center; justify-content:space-between; padding:80px 32px calc(70px + env(safe-area-inset-bottom,0px)); background:var(--overlay); backdrop-filter:blur(24px); max-width:430px; margin:0 auto; }
+    #inc-call.on { display:flex; }
+    .inc-top { display:flex; flex-direction:column; align-items:center; gap:20px; }
+    .pulse-w { position:relative; display:flex; align-items:center; justify-content:center; }
+    .pr { position:absolute; border-radius:50%; border:2px solid rgba(212,175,55,.4); animation:xRing 2s ease-out infinite; opacity:0; }
+    .pr:nth-child(2){animation-delay:.7s} .pr:nth-child(3){animation-delay:1.4s}
+    @keyframes xRing { 0%{width:100px;height:100px;opacity:.9} 100%{width:220px;height:220px;opacity:0} }
+    .inc-name { font-size:30px; font-weight:800; text-align:center; color:#fff; }
+    .inc-type { font-size:16px; color:rgba(255,255,255,.6); }
+    .cbrow { display:flex; gap:48px; align-items:center; }
+    .cbw { display:flex; flex-direction:column; align-items:center; gap:10px; }
+    .cbl { font-size:12px; color:rgba(255,255,255,.6); font-weight:500; }
+    .cc { width:72px; height:72px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:var(--t); }
+    .cc:hover{transform:scale(1.08)} .cc:active{transform:scale(.92)}
+    .cc-dec { background:var(--red); box-shadow:0 0 24px rgba(255,68,68,.5); }
+    .cc-acc { background:var(--green); box-shadow:0 0 24px rgba(0,200,83,.5); }
+
+    /* OUTGOING */
+    #out-call { position:fixed; inset:0; z-index:100; display:none; flex-direction:column; align-items:center; justify-content:space-between; padding:100px 32px calc(80px + env(safe-area-inset-bottom,0px)); background:#050505; max-width:430px; margin:0 auto; }
+    #out-call.on { display:flex; }
+    .out-top { display:flex; flex-direction:column; align-items:center; gap:20px; }
+    .out-name { font-size:30px; font-weight:800; text-align:center; }
+    .out-type { font-size:15px; font-weight:600; text-align:center; }
+    .out-dots { display:flex; gap:6px; align-items:center; margin-top:4px; }
+    .od { width:6px; height:6px; border-radius:50%; background:var(--g1); animation:dotP 1.4s ease-in-out infinite; }
+    .od:nth-child(2){animation-delay:.2s} .od:nth-child(3){animation-delay:.4s}
+    @keyframes dotP { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1.2)} }
+
+    /* VIDEO CALL */
+    #vc { position:fixed; inset:0; z-index:100; display:none; flex-direction:column; background:#000; max-width:430px; margin:0 auto; overflow:hidden; }
+    #vc.on { display:flex; }
+    #vc-rem { position:absolute; inset:0; background:#000; display:flex; align-items:center; justify-content:center; }
+    #vc-rem video { width:100%; height:100%; object-fit:cover; will-change:transform; image-rendering:auto; }
+    #vc-audio { display:none; flex-direction:column; align-items:center; gap:16px; }
+    .vc-aname { font-size:22px; font-weight:700; color:#fff; margin-top:4px; }
+    .vc-albl { font-size:14px; color:#666; }
+    /* PiP: default position bottom-right above controls */
+    #vc-pip { position:absolute; bottom:148px; right:16px; width:96px; height:132px; border-radius:14px; overflow:hidden; border:2px solid var(--g1); box-shadow:var(--gg); cursor:move; z-index:5; background:#1a1a1a; display:none; transition:bottom .3s cubic-bezier(.4,0,.2,1); }
+    #vc-pip.controls-hidden { bottom:24px; }
+    #vc-pip video { width:100%; height:100%; object-fit:cover; }
+    #vc-pip-ph { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    /* Top bar — shown/hidden via .vc-ui-hidden */
+    .vc-top { position:absolute; top:0; left:0; right:0; z-index:10; padding:48px 20px 20px; background:linear-gradient(to bottom,rgba(0,0,0,.8) 0%,transparent 100%); display:flex; align-items:flex-start; justify-content:space-between; transition:opacity .3s ease, transform .3s ease; }
+    .vc-cn { font-size:19px; font-weight:700; color:#fff; }
+    .vc-hd { display:inline-flex; align-items:center; background:rgba(212,175,55,.18); color:var(--g1); font-size:10px; font-weight:800; padding:2px 7px; border-radius:6px; border:1px solid rgba(212,175,55,.35); margin-left:8px; }
+    .vc-tr { display:flex; align-items:center; gap:10px; }
+    .vc-time { font-size:14px; color:rgba(255,255,255,.75); font-variant-numeric:tabular-nums; }
+    .sig { display:flex; gap:2px; align-items:flex-end; }
+    .sb { width:3px; border-radius:2px; background:rgba(255,255,255,.2); }
+    .sb.on { background:var(--g1); }
+    .sb:nth-child(1){height:5px} .sb:nth-child(2){height:9px} .sb:nth-child(3){height:13px}
+    /* Controls bar — shown/hidden */
+    .vc-ctrl { position:absolute; bottom:0; left:0; right:0; z-index:10; padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px)); background:linear-gradient(to top,rgba(0,0,0,.92) 0%,transparent 100%); transition:opacity .3s ease, transform .3s ease; }
+    .ctrl-row { display:flex; align-items:center; justify-content:center; gap:14px; background:rgba(24,24,24,.9); backdrop-filter:blur(24px); border-radius:50px; padding:14px 18px; border:1px solid rgba(255,255,255,.06); }
+    .ctrl { display:flex; flex-direction:column; align-items:center; gap:6px; background:none; border:none; cursor:pointer; font-family:inherit; }
+    .ctrl-i { width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,.1); display:flex; align-items:center; justify-content:center; color:#fff; transition:var(--t); }
+    .ctrl-i:hover{background:rgba(255,255,255,.18)} .ctrl-i:active{transform:scale(.9)}
+    .ctrl-i.act { background:var(--gold); color:#000; box-shadow:var(--ggs); }
+    .ctrl-i.end { width:58px; height:58px; background:var(--red); box-shadow:0 0 20px rgba(255,68,68,.5); }
+    .ctrl-i.end:hover { background:#ff2222; }
+    .ctrl-l { font-size:10px; color:rgba(255,255,255,.5); font-weight:500; white-space:nowrap; }
+    .ctrl-l.gold { color:var(--g1); }
+    /* Hidden state for top + controls */
+    #vc.ui-hidden .vc-top { opacity:0; transform:translateY(-100%); pointer-events:none; }
+    #vc.ui-hidden .vc-ctrl { opacity:0; transform:translateY(100%); pointer-events:none; }
+    /* Tap-hint dot shown when UI is hidden */
+    #vc-tap-hint { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); z-index:6; width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.35); opacity:0; transition:opacity .4s ease; pointer-events:none; }
+    #vc.ui-hidden #vc-tap-hint { opacity:1; }
+    .vc-ended { position:absolute; inset:0; z-index:20; background:rgba(0,0,0,.85); display:none; align-items:center; justify-content:center; flex-direction:column; gap:8px; }
+    .vc-ended.on { display:flex; }
+    .ve-txt { font-size:22px; font-weight:800; color:#fff; }
+    .ve-dur { font-size:16px; color:var(--text2); }
+
+    /* GROUP MODAL */
+    #grp-modal { position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.7); backdrop-filter:blur(8px); display:none; align-items:flex-end; max-width:430px; margin:0 auto; }
+    #grp-modal.on { display:flex; }
+    .grp-sh { width:100%; background:var(--card); border-radius:24px 24px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px)); max-height:72vh; overflow-y:auto; }
+    .grp-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .grp-title { font-size:20px; font-weight:800; }
+    .chk-row { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+    .chk-row:last-of-type { border-bottom:none; }
+    .chk-c { width:24px; height:24px; border-radius:50%; border:2px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:var(--t); }
+    .chk-c.on { background:var(--gold); border-color:transparent; box-shadow:var(--ggs); }
+    .grp-btns { display:flex; gap:10px; margin-top:18px; }
+    .grp-cbtn { flex:1; padding:15px; border-radius:14px; font-size:14px; font-weight:700; color:#000; display:flex; align-items:center; justify-content:center; gap:8px; }
+
+    /* DIALOG */
+    .dlg-bg { position:fixed; inset:0; z-index:120; background:rgba(0,0,0,.75); backdrop-filter:blur(10px); display:none; align-items:center; justify-content:center; padding:24px; }
+    .dlg-bg.on { display:flex; }
+    .dlg { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:26px; width:100%; max-width:320px; }
+    .dlg-t { font-size:18px; font-weight:800; margin-bottom:8px; }
+    .dlg-m { font-size:14px; color:var(--text2); line-height:1.55; margin-bottom:24px; }
+    .dlg-btns { display:flex; gap:10px; }
+    .dlg-btn { flex:1; padding:13px; border-radius:12px; border:none; cursor:pointer; font-family:inherit; font-size:14px; font-weight:700; transition:var(--t); }
+    .dlg-can { background:var(--card2); color:var(--text); border:1px solid var(--border); }
+    .dlg-can:hover { background:var(--border2); }
+    .dlg-con { background:var(--red); color:#fff; }
+    .dlg-con:hover { background:#ff2222; }
+
+    /* ABOUT */
+    .ab-bg { position:fixed; inset:0; z-index:120; background:rgba(0,0,0,.75); backdrop-filter:blur(10px); display:none; align-items:center; justify-content:center; padding:24px; }
+    .ab-bg.on { display:flex; }
+    .ab-card { background:var(--card); border:1px solid var(--border); border-radius:20px; padding:32px 24px; text-align:center; max-width:300px; width:100%; }
+    .ab-logo { font-size:42px; font-weight:900; letter-spacing:-1px; margin-bottom:4px; }
+    .ab-ver { font-size:12px; color:var(--text2); margin-bottom:20px; font-weight:600; letter-spacing:1px; text-transform:uppercase; }
+    .ab-txt { font-size:14px; color:var(--text2); line-height:1.65; margin-bottom:24px; }
+    .ab-close { padding:14px; border-radius:12px; font-size:14px; font-weight:700; color:#000; width:100%; }
+
+    /* TOASTS */
+    #toasts { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:200; display:flex; flex-direction:column; gap:8px; width:calc(100% - 32px); max-width:398px; pointer-events:none; }
+    .toast { display:flex; align-items:center; gap:12px; padding:13px 15px; border-radius:14px; font-size:14px; font-weight:600; backdrop-filter:blur(20px); animation:tIn .3s cubic-bezier(.32,.72,0,1); pointer-events:all; box-shadow:0 8px 32px rgba(0,0,0,.35); }
+    .toast.out { animation:tOut .22s ease forwards; }
+    .t-s{background:rgba(0,200,83,.14);color:#00C853;border:1px solid rgba(0,200,83,.3)}
+    .t-e{background:rgba(255,68,68,.14);color:var(--red);border:1px solid rgba(255,68,68,.3)}
+    .t-i{background:rgba(212,175,55,.14);color:var(--g1);border:1px solid rgba(212,175,55,.3)}
+    .t-w{background:rgba(255,165,0,.14);color:#FFA500;border:1px solid rgba(255,165,0,.3)}
+    @keyframes tIn{from{transform:translateY(-16px);opacity:0}to{transform:translateY(0);opacity:1}}
+    @keyframes tOut{from{transform:translateY(0);opacity:1}to{transform:translateY(-16px);opacity:0}}
+
+    /* MISC */
+    .spin { width:18px; height:18px; border-radius:50%; border:2px solid rgba(0,0,0,.15); border-top-color:#000; animation:sp .7s linear infinite; display:inline-block; }
+    @keyframes sp { to{transform:rotate(360deg)} }
+    ::-webkit-scrollbar{width:0}
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+    @media(min-width:431px){
+      #app,#inc-call,#out-call,#vc,#grp-modal{left:50%;transform:translateX(-50%);position:fixed;width:430px}
+      #toasts{left:50%;transform:translateX(-50%)}
+    }
+  </style>
+</head>
+<body>
+
+<div id="toasts"></div>
+
+<div id="app">
+
+  <!-- SPLASH -->
+  <div id="splash" class="screen show">
+    <div class="s-orb">
+      <div class="s-orb-i">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#D4AF37" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.81-.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+          <path d="M14.05 2a9 9 0 0 1 8 7.94"/><path d="M14.05 6A5 5 0 0 1 18 10"/>
+        </svg>
+      </div>
+    </div>
+    <div class="s-logo gt">TALKSY</div>
+    <div class="s-tag">Connect · Talk · Shine</div>
+    <div class="s-bar"></div>
+  </div>
+
+  <!-- AUTH -->
+  <div id="auth" class="screen">
+    <div class="aw">
+      <div class="at"><div class="a-logo gt">TALKSY</div><div class="a-sub">Join the conversation</div></div>
+      <div class="tab-row">
+        <button class="tab-btn on" id="tab-login" onclick="switchTab('login')">Sign In</button>
+        <button class="tab-btn" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+      </div>
+      <!-- Login -->
+      <div class="fp on" id="fp-login">
+        <div class="fld"><label class="fld-lbl">Email</label><input class="fld-inp" id="l-email" type="email" placeholder="you@example.com" autocomplete="email"/><div class="fld-err" id="l-email-e"></div></div>
+        <div class="fld"><label class="fld-lbl">Password</label><input class="fld-inp" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"/><div class="fld-err" id="l-pass-e"></div></div>
+        <div class="forgot"><a onclick="forgotPwd()">Forgot password?</a></div>
+        <div class="gen-err" id="l-err"></div>
+        <button class="gb auth-btn" id="l-btn" onclick="doLogin()">Sign In</button>
+      </div>
+      <!-- Signup -->
+      <div class="fp" id="fp-signup">
+        <div class="fld"><label class="fld-lbl">Full Name</label><input class="fld-inp" id="s-name" type="text" placeholder="Your Name" autocomplete="name"/><div class="fld-err" id="s-name-e"></div></div>
+        <div class="fld"><label class="fld-lbl">Email</label><input class="fld-inp" id="s-email" type="email" placeholder="you@example.com" autocomplete="email"/><div class="fld-err" id="s-email-e"></div></div>
+        <div class="fld"><label class="fld-lbl">Password</label><input class="fld-inp" id="s-pass" type="password" placeholder="At least 6 characters" autocomplete="new-password"/><div class="fld-err" id="s-pass-e"></div></div>
+        <div class="fld"><label class="fld-lbl">Confirm Password</label><input class="fld-inp" id="s-conf" type="password" placeholder="Re-enter password" autocomplete="new-password"/><div class="fld-err" id="s-conf-e"></div></div>
+        <div class="gen-err" id="s-err"></div>
+        <button class="gb auth-btn" id="s-btn" onclick="doSignup()">Create Account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP SHELL -->
+  <div id="app-shell" style="display:none;">
+    <div class="pages" id="pages">
+
+      <!-- HOME -->
+      <div class="page on" id="p-home">
+        <div class="ph">
+          <div class="ph-title gt">TALKSY</div>
+          <div class="ph-act">
+            <button class="ibtn" onclick="toggleTheme()" id="theme-btn"><svg id="theme-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></button>
+          </div>
+        </div>
+        <div class="sec-lbl">Recent Calls</div>
+        <div id="calls-list">
+          <div class="sk-row"><div class="skel sk-av"></div><div class="sk-lines"><div class="skel sk-a"></div><div class="skel sk-b"></div></div></div>
+          <div class="sk-row"><div class="skel sk-av"></div><div class="sk-lines"><div class="skel sk-a"></div><div class="skel sk-b"></div></div></div>
+          <div class="sk-row"><div class="skel sk-av"></div><div class="sk-lines"><div class="skel sk-a"></div><div class="skel sk-b"></div></div></div>
+        </div>
+      </div>
+
+      <!-- CONTACTS -->
+      <div class="page" id="p-contacts">
+        <div class="ph">
+          <div class="ph-title">Contacts</div>
+          <div class="ph-act">
+            <button class="ibtn" onclick="showGrpModal()" title="Group call"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+          </div>
+        </div>
+        <div class="sw"><div class="sbox"><svg class="s-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="s-inp" id="c-search" type="search" placeholder="Search contacts…" oninput="filterContacts()"/></div></div>
+        <div id="contacts-list" style="flex:1;overflow-y:auto;"></div>
+      </div>
+
+      <!-- ADD -->
+      <div class="page" id="p-add">
+        <div class="ph"><div class="ph-title">Add Contact</div></div>
+        <div class="add-card">
+          <div class="add-title">Find by TALKSY ID</div>
+          <div class="add-sub">Enter the 6-digit ID of the person you want to connect with.</div>
+          <div class="fld">
+            <label class="fld-lbl">TALKSY ID</label>
+            <input class="big-inp" id="add-id-inp" type="number" placeholder="000000" inputmode="numeric" oninput="if(this.value.length>6)this.value=this.value.slice(0,6)"/>
+          </div>
+          <button class="gb" id="add-srch-btn" onclick="searchUser()" style="width:100%;padding:16px;border-radius:14px;font-size:15px;color:#000;">Search</button>
+          <div class="add-res" id="add-result">
+            <div id="add-res-av"></div>
+            <div class="add-res-info">
+              <div class="add-res-name" id="add-res-name"></div>
+              <div class="add-res-id" id="add-res-id"></div>
+            </div>
+            <button class="gb" id="add-res-btn" onclick="confirmAddContact()" style="padding:10px 18px;border-radius:12px;font-size:13px;font-weight:700;color:#000;">Add</button>
+          </div>
+          <div id="add-msg" style="margin-top:14px;font-size:14px;font-weight:500;"></div>
+        </div>
+      </div>
+
+      <!-- PROFILE -->
+      <div class="page" id="p-profile">
+        <div class="ph"><div class="ph-title">Profile</div></div>
+        <div class="prof-hero">
+          <div class="av-edit" onclick="pickAv()">
+            <div class="av" id="prof-av" style="width:104px;height:104px;font-size:40px;border:3px solid var(--g1);box-shadow:var(--ggs);"></div>
+            <div class="av-edit-lbl"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+          </div>
+          <input type="file" id="av-file" accept="image/*" style="display:none;" onchange="onAvFile(event)"/>
+          <div class="pname-row">
+            <input class="pname-inp" id="prof-name" type="text" onkeydown="nameKey(event)"/>
+            <button class="pen-btn" onclick="startEdit()" id="pen-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          </div>
+          <div class="n-acts" id="n-acts">
+            <button class="n-save" onclick="saveName()">Save</button>
+            <button class="n-cancel" onclick="cancelEdit()">Cancel</button>
+          </div>
+          <div class="p-email" id="prof-email"></div>
+        </div>
+        <div class="id-card">
+          <div class="id-card-in"><div class="id-lbl">Your TALKSY ID</div><div class="id-val gt" id="prof-tid">——————</div></div>
+          <button class="copy-btn" onclick="copyId()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        </div>
+        <div class="stats-row">
+          <div class="stat-c"><div class="stat-v gt" id="s-calls">0</div><div class="stat-l">Calls</div></div>
+          <div class="stat-c"><div class="stat-v gt" id="s-contacts">0</div><div class="stat-l">Contacts</div></div>
+        </div>
+        <div class="sgrp">
+          <div class="sett" onclick="toggleTheme()">
+            <div class="sett-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+            <span class="sett-lbl">Theme</span>
+            <button class="tog" id="theme-tog" onclick="event.stopPropagation();toggleTheme()"></button>
+          </div>
+          <div class="sett">
+            <div class="sett-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+            <span class="sett-lbl">Notifications</span>
+            <button class="tog on" onclick="event.stopPropagation();this.classList.toggle('on')"></button>
+          </div>
+          <div class="sett" onclick="showAbout()">
+            <div class="sett-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <span class="sett-lbl">About TALKSY</span>
+            <svg class="sett-r" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+        <div style="height:16px;"></div>
+        <button class="so-btn" onclick="confirmSignout()">Sign Out</button>
+        <div style="height:28px;"></div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="nav">
+      <button class="nb on" id="nb-home" onclick="goPage('home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span class="lbl">Home</span></button>
+      <button class="nb" id="nb-contacts" onclick="goPage('contacts')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="lbl">Contacts</span></button>
+      <button class="nb" id="nb-add" onclick="goPage('add')"><div class="nav-fab"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div><span class="lbl" style="visibility:hidden;font-size:10px;">Add</span></button>
+      <button class="nb" id="nb-profile" onclick="goPage('profile')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="lbl">Profile</span></button>
+    </nav>
+  </div>
+
+</div><!-- /app -->
+
+<!-- CONTACT SHEET -->
+<div class="sh-bg" id="c-sheet" onclick="closeSheet(event)">
+  <div class="sh">
+    <div class="sh-handle"></div>
+    <div class="sh-prof">
+      <div id="sh-av"></div>
+      <div class="sh-name" id="sh-name"></div>
+      <div class="sh-id" id="sh-id-lbl"></div>
+      <div class="sh-online" id="sh-online"></div>
+    </div>
+    <div class="sh-btns">
+      <button class="gb sh-cta" onclick="sheetCall('video')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>Video</button>
+      <button class="gb sh-cta" onclick="sheetCall('audio')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.81-.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Audio</button>
+    </div>
+    <button class="sh-del" onclick="removeContact()">Remove Contact</button>
+  </div>
+</div>
+
+<!-- INCOMING -->
+<div id="inc-call">
+  <div class="inc-top">
+    <div class="pulse-w">
+      <div class="pr"></div><div class="pr"></div><div class="pr"></div>
+      <div class="av" id="inc-av" style="width:104px;height:104px;font-size:40px;border:3px solid var(--g1);box-shadow:var(--gg);z-index:1;"></div>
+    </div>
+    <div style="text-align:center;">
+      <div class="inc-name" id="inc-name">Caller</div>
+      <div class="inc-type" id="inc-type" style="margin-top:6px;">Incoming Video Call</div>
+    </div>
+  </div>
+  <div class="cbrow">
+    <div class="cbw"><button class="cc cc-dec" onclick="declineCall()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.89 8.57a19.78 19.78 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3.1a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.69 8.9"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button><div class="cbl">Decline</div></div>
+    <div class="cbw"><button class="cc cc-acc" onclick="acceptCall()"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.81-.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button><div class="cbl">Accept</div></div>
+  </div>
+</div>
+
+<!-- OUTGOING -->
+<div id="out-call">
+  <div class="out-top">
+    <div class="pulse-w">
+      <div class="pr"></div><div class="pr"></div>
+      <div class="av" id="out-av" style="width:104px;height:104px;font-size:40px;border:3px solid var(--g1);box-shadow:var(--gg);z-index:1;"></div>
+    </div>
+    <div style="text-align:center;">
+      <div class="out-name" id="out-name">Contact</div>
+      <div class="out-type gt" id="out-type">Video Call</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+      <div style="font-size:16px;color:var(--text2);">Calling</div>
+      <div class="out-dots"><div class="od"></div><div class="od"></div><div class="od"></div></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <button class="cc cc-dec" style="width:72px;height:72px;" onclick="cancelOutgoing()"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.89 8.57a19.78 19.78 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3.1a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.69 8.9"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+    <div style="font-size:12px;color:var(--text3);">Cancel</div>
+  </div>
+</div>
+
+<!-- VIDEO CALL -->
+<div id="vc">
+  <div id="vc-rem">
+    <div id="vc-audio">
+      <div class="pulse-w">
+        <div class="pr"></div><div class="pr"></div>
+        <div class="av" id="vc-av" style="width:120px;height:120px;font-size:46px;border:3px solid var(--g1);box-shadow:var(--gg);z-index:1;"></div>
+      </div>
+      <div class="vc-aname" id="vc-aname">Contact</div>
+      <div class="vc-albl">Audio Call</div>
+    </div>
+  </div>
+  <div id="vc-pip">
+    <div id="vc-pip-ph"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+  </div>
+  <div id="vc-tap-hint"></div>
+  <div class="vc-top">
+    <div><span class="vc-cn" id="vc-cn">Contact</span><span class="vc-hd">UHD</span></div>
+    <div class="vc-tr"><div class="sig" id="vc-sig"><div class="sb on"></div><div class="sb on"></div><div class="sb on"></div></div><div class="vc-time" id="vc-time">00:00</div></div>
+  </div>
+  <div class="vc-ctrl">
+    <div class="ctrl-row">
+      <button class="ctrl" onclick="toggleMic()" id="c-mic"><div class="ctrl-i act" id="mic-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div><span class="ctrl-l gold" id="mic-l">Mic</span></button>
+      <button class="ctrl" onclick="toggleCam()" id="c-cam"><div class="ctrl-i act" id="cam-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><span class="ctrl-l gold" id="cam-l">Camera</span></button>
+      <button class="ctrl" onclick="toggleSpk()"><div class="ctrl-i" id="spk-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></div><span class="ctrl-l" id="spk-l">Speaker</span></button>
+      <button class="ctrl" onclick="flipCam()"><div class="ctrl-i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/><path d="m15 3-3-3-3 3"/></svg></div><span class="ctrl-l">Flip</span></button>
+      <button class="ctrl" onclick="endCall()"><div class="ctrl-i end"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.42 19.42 0 0 1 4.89 8.57a19.78 19.78 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3.1a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.69 8.9"/><line x1="23" y1="1" x2="1" y2="23"/></svg></div><span class="ctrl-l">End</span></button>
+    </div>
+  </div>
+  <div class="vc-ended" id="vc-ended"><div class="ve-txt">Call Ended</div><div class="ve-dur" id="ve-dur"></div></div>
+</div>
+
+<!-- GROUP MODAL -->
+<div id="grp-modal" onclick="closeGrpModal(event)">
+  <div class="grp-sh">
+    <div class="sh-handle"></div>
+    <div class="grp-hdr"><span class="grp-title">Start Group Call</span><button class="ibtn" onclick="closeGrpModal(null,true)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div id="grp-list"></div>
+    <div class="grp-btns">
+      <button class="gb grp-cbtn" onclick="startGrpCall('video')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>Video</button>
+      <button class="gb grp-cbtn" onclick="startGrpCall('audio')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.81-.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Audio</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIGNOUT DIALOG -->
+<div class="dlg-bg" id="so-dlg">
+  <div class="dlg">
+    <div class="dlg-t">Sign Out?</div>
+    <div class="dlg-m">You'll need to sign in again to use TALKSY.</div>
+    <div class="dlg-btns"><button class="dlg-btn dlg-can" onclick="closeSoDlg()">Cancel</button><button class="dlg-btn dlg-con" onclick="doSignout()">Sign Out</button></div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="ab-bg" id="ab-modal" onclick="closeAbout(event)">
+  <div class="ab-card">
+    <div class="ab-logo gt">TALKSY</div>
+    <div class="ab-ver">Version 1.1 · Firebase + Agora RTC · Ultra HD</div>
+    <div class="ab-txt">A premium video calling experience. Crystal-clear 1080p Ultra HD video at 30fps, studio-quality 48kHz stereo audio, real-time contacts, group calls — all in one beautiful app.</div>
+    <button class="gb ab-close" onclick="closeAbout(null,true)">Close</button>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────
+// FIREBASE
+// ──────────────────────────────────────────────────────
+firebase.initializeApp({
+  apiKey:"AIzaSyDsnLAh_C28Og_1ahcUd8IbHK9-rYVKvA4",
+  authDomain:"starmaker-calls.firebaseapp.com",
+  projectId:"starmaker-calls",
+  storageBucket:"starmaker-calls.firebasestorage.app",
+  messagingSenderId:"762728734680",
+  appId:"1:762728734680:web:af856825d3ee09a304dcad"
+});
+const auth = firebase.auth();
+const db   = firebase.firestore();
+const AGORA_APP_ID = "0810267927b4400490af954557a44417";
+
+// ──────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────
+const S = {
+  user:null, profile:null,
+  contacts:[], calls:[],
+  theme: localStorage.getItem('txy-theme') || 'dark',
+  page:'home',
+  // call
+  callId:null, callDocUnsub:null,
+  incomingData:null,
+  callDur:0, callStart:null,
+  timerInt:null, sigInt:null,
+  outTimeoutId:null, declineTimeoutId:null,
+  // agora
+  client:null, micTrack:null, vidTrack:null,
+  remoteUsers:{}, micMuted:false, camOff:false, spkOn:false, _flipping:false,
+  // groups
+  grpSelected:[],
+  // db
+  unsubCalls:null, unsubIncoming:null, unsubContacts:null,
+  // ring
+  audioCtx:null, ringtoneId:null,
+  // sheet
+  sheetUid:null,
+  // add contact pending
+  pendingContact:null,
+};
+
+// ──────────────────────────────────────────────────────
+// THEME
+// ──────────────────────────────────────────────────────
+function applyTheme(t) {
+  S.theme = t;
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('txy-theme', t);
+  const tog = document.getElementById('theme-tog');
+  if (tog) tog.classList.toggle('on', t === 'light');
+  const ico = document.getElementById('theme-ico');
+  if (ico) ico.innerHTML = t === 'light'
+    ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+    : '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+}
+function toggleTheme() { applyTheme(S.theme === 'dark' ? 'light' : 'dark'); }
+applyTheme(S.theme);
+
+// ──────────────────────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────────────────────
+function toast(msg, type, dur) {
+  type = type || 'i'; dur = dur || 3200;
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  const icons = {
+    s:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    e:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+    i:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    w:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  };
+  el.className = 'toast t-' + type;
+  el.innerHTML = (icons[type]||icons.i) + '<span>' + esc(msg) + '</span>';
+  c.appendChild(el);
+  setTimeout(function(){ el.classList.add('out'); setTimeout(function(){ el.remove(); }, 250); }, dur);
+}
+
+// ──────────────────────────────────────────────────────
+// AUTH
+// ──────────────────────────────────────────────────────
+function switchTab(t) {
+  clearErrors();
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('on'); });
+  document.getElementById('tab-'+t).classList.add('on');
+  document.querySelectorAll('.fp').forEach(function(p){ p.classList.remove('on'); });
+  document.getElementById('fp-'+t).classList.add('on');
+}
+function clearErrors() {
+  document.querySelectorAll('.fld-err,.gen-err').forEach(function(e){ e.classList.remove('on'); e.textContent=''; });
+}
+function showErr(id, msg) {
+  var el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.classList.add('on'); }
+}
+function setBusy(btn, busy, lbl) {
+  btn.disabled = busy;
+  btn.innerHTML = busy ? '<div class="spin"></div>' : (lbl || btn.textContent);
+}
+
+async function doLogin() {
+  clearErrors();
+  var email = document.getElementById('l-email').value.trim();
+  var pass  = document.getElementById('l-pass').value;
+  if (!email) { showErr('l-email-e','Email is required'); return; }
+  if (!pass)  { showErr('l-pass-e','Password is required'); return; }
+  var btn = document.getElementById('l-btn');
+  setBusy(btn, true);
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch(e) {
+    setBusy(btn, false, 'Sign In');
+    var msgs = {
+      'auth/user-not-found':'No account found with this email',
+      'auth/wrong-password':'Incorrect password',
+      'auth/invalid-credential':'Invalid email or password',
+      'auth/too-many-requests':'Too many attempts — try again later',
+      'auth/invalid-email':'Invalid email format',
+    };
+    showErr('l-err', msgs[e.code] || e.message);
+  }
+}
+
+async function genUniqueTalkerId() {
+  for (var i=0;i<20;i++) {
+    var id = String(Math.floor(100000 + Math.random() * 900000));
+    var s = await db.collection('users').where('talkerId','==',id).limit(1).get();
+    if (s.empty) return id;
+  }
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+async function doSignup() {
+  clearErrors();
+  var name  = document.getElementById('s-name').value.trim();
+  var email = document.getElementById('s-email').value.trim();
+  var pass  = document.getElementById('s-pass').value;
+  var conf  = document.getElementById('s-conf').value;
+  if (!name)         { showErr('s-name-e','Name is required'); return; }
+  if (!email)        { showErr('s-email-e','Email is required'); return; }
+  if (pass.length<6) { showErr('s-pass-e','Min. 6 characters'); return; }
+  if (pass !== conf) { showErr('s-conf-e','Passwords do not match'); return; }
+  var btn = document.getElementById('s-btn');
+  setBusy(btn, true);
+  try {
+    var cred = await auth.createUserWithEmailAndPassword(email, pass);
+    var uid  = cred.user.uid;
+    var tid  = await genUniqueTalkerId();
+    await db.collection('users').doc(uid).set({
+      name: name, email: email, photoURL: '',
+      talkerId: tid, online: true,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch(e) {
+    setBusy(btn, false, 'Create Account');
+    var msgs = {
+      'auth/email-already-in-use':'Account already exists with this email',
+      'auth/invalid-email':'Invalid email format',
+      'auth/weak-password':'Password too weak',
+    };
+    showErr('s-err', msgs[e.code] || e.message);
+  }
+}
+
+async function forgotPwd() {
+  var email = document.getElementById('l-email').value.trim();
+  if (!email) { showErr('l-email-e','Enter your email first'); return; }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    toast('Reset email sent — check your inbox', 's');
+  } catch(e) { toast('Error: ' + e.message, 'e'); }
+}
+
+// ──────────────────────────────────────────────────────
+// AUTH STATE CHANGE
+// ──────────────────────────────────────────────────────
+auth.onAuthStateChanged(async function(user) {
+  if (user) {
+    S.user = user;
+    await loadProfile(user.uid);
+    setupPresence(user.uid);
+    cleanupStale(user.uid);
+    showShell();
+    setupListeners(user.uid);
+    renderCalls();
+  } else {
+    S.user = null; S.profile = null;
+    cleanupListeners();
+    showAuth();
+  }
+});
+
+function showAuth() {
+  document.getElementById('splash').classList.remove('show');
+  document.getElementById('auth').classList.add('show');
+  document.getElementById('app-shell').style.display = 'none';
+  var lb = document.getElementById('l-btn'); if(lb){lb.disabled=false;lb.textContent='Sign In';}
+  var sb = document.getElementById('s-btn'); if(sb){sb.disabled=false;sb.textContent='Create Account';}
+}
+function showShell() {
+  document.getElementById('splash').classList.remove('show');
+  document.getElementById('auth').classList.remove('show');
+  document.getElementById('app-shell').style.display = '';
+  if (S.profile) renderProfile();
+}
+
+async function loadProfile(uid) {
+  try {
+    var doc = await db.collection('users').doc(uid).get();
+    if (doc.exists) {
+      var data = doc.data();
+      if (!data.talkerId) {
+        var newTid = await genUniqueTalkerId();
+        await db.collection('users').doc(uid).update({ talkerId: newTid });
+        data.talkerId = newTid;
+      }
+      S.profile = Object.assign({ id: uid }, data);
+    }
+  } catch(e) { console.warn('loadProfile', e); }
+}
+
+function setupPresence(uid) {
+  var ref = db.collection('users').doc(uid);
+  ref.update({ online: true }).catch(function(){});
+  window.addEventListener('beforeunload', function(){ ref.update({ online: false }); });
+  document.addEventListener('visibilitychange', function(){
+    if (!S.user) return;
+    ref.update({ online: !document.hidden }).catch(function(){});
+  });
+}
+
+// FIX: mark stale calls as ended on login
+async function cleanupStale(uid) {
+  try {
+    await db.collection('callingIds').doc(uid).delete().catch(function(){});
+    var snap = await db.collection('calls')
+      .where('callerId','==',uid)
+      .where('status','in',['ringing','accepted'])
+      .get();
+    if (!snap.empty) {
+      var b = db.batch();
+      snap.docs.forEach(function(d){ b.update(d.ref,{status:'ended'}); });
+      await b.commit();
+    }
+  } catch(e) { /* silently ignore — index may not exist */ }
+}
+
+function cleanupListeners() {
+  if (S.unsubCalls)    { S.unsubCalls();    S.unsubCalls = null; }
+  if (S.unsubIncoming) { S.unsubIncoming(); S.unsubIncoming = null; }
+  if (S.unsubContacts) { S.unsubContacts(); S.unsubContacts = null; }
+  if (S.callDocUnsub)  { S.callDocUnsub();  S.callDocUnsub = null; }
+  stopRingtone();
+  if (S.timerInt)        { clearInterval(S.timerInt);     S.timerInt = null; }
+  if (S.sigInt)          { clearInterval(S.sigInt);       S.sigInt = null; }
+  if (S.outTimeoutId)    { clearTimeout(S.outTimeoutId);  S.outTimeoutId = null; }
+  if (S.declineTimeoutId){ clearTimeout(S.declineTimeoutId); S.declineTimeoutId = null; }
+}
+
+// ──────────────────────────────────────────────────────
+// FIRESTORE LISTENERS
+// ──────────────────────────────────────────────────────
+function setupListeners(uid) {
+  // Contacts
+  S.unsubContacts = db.collection('users').doc(uid).collection('contacts')
+    .onSnapshot(function(snap) {
+      S.contacts = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      S.contacts.forEach(function(c){
+        if (!c.name || c.name === 'Unknown' || !c.talkerId) refreshContactName(uid, c);
+      });
+      if (S.page==='contacts') renderContacts();
+      if (S.page==='profile')  updateStats();
+    }, function(e){ console.warn('contacts listener', e); });
+
+  // Calls — use two simple queries merged client-side (avoids composite index)
+  S.unsubCalls = db.collection('calls').where('callerId','==',uid)
+    .onSnapshot(function(snap) {
+      var outgoing = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+      db.collection('calls').where('receiverId','==',uid).get()
+        .then(function(snap2) {
+          var incoming = snap2.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+          var all = outgoing.concat(incoming);
+          // Deduplicate by id
+          var seen = {}; all = all.filter(function(c){ if(seen[c.id]) return false; seen[c.id]=true; return true; });
+          all.sort(function(a,b){
+            var ta = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate() : new Date()) : new Date(0);
+            var tb = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate() : new Date()) : new Date(0);
+            return tb - ta;
+          });
+          S.calls = all.slice(0, 40);
+          if (S.page==='home')    renderCalls();
+          if (S.page==='profile') updateStats();
+        })
+        .catch(function(){
+          S.calls = outgoing.slice(0, 40);
+          if (S.page==='home') renderCalls();
+        });
+    }, function(e){ console.warn('calls listener', e); });
+
+  // Incoming call signal
+  S.unsubIncoming = db.collection('callingIds').doc(uid)
+    .onSnapshot(function(snap) {
+      if (snap.exists) {
+        var d = snap.data();
+        if (d && d.status === 'ringing' && !S.callId) showIncoming(d);
+      } else {
+        if (S.incomingData) hideIncoming();
+      }
+    }, function(e){ console.warn('incoming listener', e); });
+}
+
+// FIX: refresh contact name/talkerId from users collection if missing
+function refreshContactName(myUid, contact) {
+  db.collection('users').doc(contact.id).get().then(function(snap) {
+    if (snap.exists) {
+      var d = snap.data();
+      var update = {};
+      if (!contact.name || contact.name === 'Unknown') update.name = d.name || 'Unknown';
+      if (!contact.talkerId && d.talkerId) update.talkerId = d.talkerId;
+      if (!contact.photoURL && d.photoURL) update.photoURL = d.photoURL;
+      if (Object.keys(update).length > 0) {
+        db.collection('users').doc(myUid).collection('contacts').doc(contact.id)
+          .update(update).catch(function(){});
+      }
+    }
+  }).catch(function(){});
+}
+
+// ──────────────────────────────────────────────────────
+// NAVIGATION
+// ──────────────────────────────────────────────────────
+function goPage(page) {
+  S.page = page;
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('on'); });
+  document.getElementById('p-'+page).classList.add('on');
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('on'); });
+  document.getElementById('nb-'+page).classList.add('on');
+  if (page === 'contacts') renderContacts();
+  if (page === 'profile')  renderProfile();
+  if (page === 'home')     renderCalls();
+  if (page === 'add') {
+    document.getElementById('add-id-inp').value = '';
+    document.getElementById('add-result').classList.remove('on');
+    document.getElementById('add-msg').textContent = '';
+    S.pendingContact = null;
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// HOME — CALL HISTORY
+// ──────────────────────────────────────────────────────
+function renderCalls() {
+  var el = document.getElementById('calls-list');
+  if (!el) return;
+  var uid = S.user ? S.user.uid : null;
+  var calls = S.calls.filter(function(c){
+    return c.callerId===uid || c.receiverId===uid ||
+           (c.receiverIds && c.receiverIds.indexOf(uid) !== -1);
+  });
+  if (!calls.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.81-.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div><div class="empty-t">No calls yet</div><div class="empty-s">Add contacts and start your first call!</div></div>';
+    return;
+  }
+  el.innerHTML = calls.map(function(c) {
+    var isOut = c.callerId === uid;
+    var name  = isOut ? (c.receiverName||'Unknown') : (c.callerName||'Unknown');
+    var photo = isOut ? (c.receiverAvatar||'')      : (c.callerAvatar||'');
+    var ouid  = isOut ? (c.receiverId||'')          : (c.callerId||'');
+    var isV   = c.type === 'video' || c.type === 'group-video';
+    var isG   = String(c.type||'').indexOf('group') !== -1;
+    var ts    = c.createdAt ? timeAgo(c.createdAt.toDate ? c.createdAt.toDate() : new Date()) : '';
+    var dur   = (c.duration && c.duration > 0) ? fmtDur(c.duration) : '';
+    var sColor = c.status==='missed' ? 'var(--red)' : c.status==='ended' ? 'var(--text2)' : 'var(--g1)';
+    var arrow = isOut
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+sColor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>'
+      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+sColor+'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/></svg>';
+    return '<div class="ci" onclick="callBackById(\''+esc(ouid)+'\',\''+(isV?'video':'audio')+'\')">'
+      + '<div class="av-w">'+mkAv(photo,name,48)+'<div class="pip-dot" data-uid="'+esc(ouid)+'"></div></div>'
+      + '<div class="ci-info"><div class="ci-name">'+esc(isG?'Group Call':name)+'</div>'
+      + '<div class="ci-meta">'+arrow+'<span style="color:'+sColor+';font-size:12px;font-weight:600;">'+esc(c.status||'')+'</span>'+(dur?'<span style="color:var(--text3);">· '+dur+'</span>':'')+'</div></div>'
+      + '<div class="ci-right"><div class="ci-time">'+ts+'</div><span class="tbadge '+(isV?'tbadge-v':'tbadge-a')+'">'+(isV?'Video':'Audio')+'</span></div>'
+      + '</div>';
+  }).join('');
+  requestAnimationFrame(pingOnline);
+}
+
+// FIX: lookup contact by uid from contacts array (safe)
+function callBackById(uid, type) {
+  if (!uid) { toast('Cannot call — no contact ID', 'e'); return; }
+  var c = S.contacts.find(function(x){ return x.id === uid; });
+  if (!c) { toast('Add this person to contacts first', 'i'); return; }
+  startCallWithContact(c, type);
+}
+
+// ──────────────────────────────────────────────────────
+// CONTACTS
+// ──────────────────────────────────────────────────────
+function renderContacts(q) {
+  var el = document.getElementById('contacts-list');
+  if (!el) return;
+  q = (q || '').toLowerCase();
+  var list = q ? S.contacts.filter(function(c){
+    return (c.name||'').toLowerCase().indexOf(q)!==-1 || (c.talkerId||'').indexOf(q)!==-1;
+  }) : S.contacts;
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><div class="empty-t">'+(q?'No results':'No contacts')+'</div><div class="empty-s">'+(q?'Try a different search.':'Use the + button to add someone.')+'</div></div>';
+    return;
+  }
+
+  // FIX: pass uid as string to onclick — NO JSON serialization
+  el.innerHTML = list.map(function(c) {
+    var uid = esc(c.id || '');
+    return '<div class="contact-row" onclick="openSheet(\''+uid+'\')">'
+      + '<div class="av-w">'+mkAv(c.photoURL,c.name,48)+'<div class="pip-dot" data-uid="'+uid+'"></div></div>'
+      + '<div class="ct-info"><div class="ct-name">'+esc(c.name||'Unknown')+'</div><div class="ct-id">ID: '+(c.talkerId ? esc(c.talkerId) : '<span style="color:var(--text3);font-style:italic;">fetching2026</span>')+'</div></div>'
+      + '<div class="ct-btns" onclick="event.stopPropagation()">'
+      + '<button class="ct-btn" onclick="startCallById(\''+uid+'\',\'video\')" title="Video call"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>'
+      + '<button class="ct-btn" onclick="startCallById(\''+uid+'\',\'audio\')" title="Audio call"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 8.91a16 16 0 0 0 6 6l.81-.81a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>'
+      + '</div></div>';
+  }).join('');
+  requestAnimationFrame(pingOnline);
+}
+function filterContacts() { renderContacts(document.getElementById('c-search').value); }
+
+// FIX: start call via uid lookup — avoids JSON string as contact object
+function startCallById(uid, type) {
+  if (!uid) { toast('Contact ID is empty', 'e'); return; }
+  var c = S.contacts.find(function(x){ return x.id === uid; });
+  if (!c) { toast('Contact not found', 'e'); return; }
+  startCallWithContact(c, type);
+}
+
+function pingOnline() {
+  document.querySelectorAll('.pip-dot[data-uid]').forEach(function(pip) {
+    var uid = pip.dataset.uid;
+    if (!uid) return;
+    db.collection('users').doc(uid).get().then(function(s){
+      pip.classList.toggle('live', !!(s.exists && s.data().online));
+    }).catch(function(){});
+  });
+}
+
+// ──────────────────────────────────────────────────────
+// CONTACT SHEET
+// ──────────────────────────────────────────────────────
+function openSheet(uid) {
+  var c = S.contacts.find(function(x){ return x.id === uid; });
+  if (!c) return;
+  S.sheetUid = uid;
+  // Set avatar
+  var avEl = document.getElementById('sh-av');
+  avEl.innerHTML = mkAv(c.photoURL, c.name, 88);
+  document.getElementById('sh-name').textContent    = c.name || 'Unknown';
+  document.getElementById('sh-id-lbl').textContent  = 'TALKSY ID: ' + (c.talkerId || '——');
+  var onEl = document.getElementById('sh-online');
+  onEl.textContent = ''; onEl.className = 'sh-online';
+  db.collection('users').doc(uid).get().then(function(s){
+    if (s.exists && s.data().online) {
+      onEl.textContent = '● Online'; onEl.classList.add('live');
+    } else {
+      onEl.textContent = '● Offline'; onEl.classList.add('away');
+    }
+  }).catch(function(){});
+  document.getElementById('c-sheet').classList.add('on');
+}
+function closeSheet(e) {
+  if (!e || e.target === document.getElementById('c-sheet'))
+    document.getElementById('c-sheet').classList.remove('on');
+}
+function sheetCall(type) {
+  document.getElementById('c-sheet').classList.remove('on');
+  if (S.sheetUid) startCallById(S.sheetUid, type);
+}
+function removeContact() {
+  if (!S.sheetUid || !S.user) return;
+  var uid = S.sheetUid;
+  document.getElementById('c-sheet').classList.remove('on');
+  db.collection('users').doc(S.user.uid).collection('contacts').doc(uid).delete()
+    .then(function(){ toast('Contact removed', 'i'); })
+    .catch(function(e){ toast('Error: ' + e.message, 'e'); });
+}
+
+// ──────────────────────────────────────────────────────
+// ADD CONTACT
+// ──────────────────────────────────────────────────────
+async function searchUser() {
+  var val = (document.getElementById('add-id-inp').value || '').trim();
+  var msg = document.getElementById('add-msg');
+  var res = document.getElementById('add-result');
+  res.classList.remove('on'); msg.textContent = ''; msg.style.color='';
+  S.pendingContact = null;
+
+  if (!val || val.length !== 6 || isNaN(val)) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Please enter a valid 6-digit ID'; return;
+  }
+  if (S.profile && val === S.profile.talkerId) {
+    msg.style.color = 'var(--g1)'; msg.textContent = "That's your own ID!"; return;
+  }
+
+  var btn = document.getElementById('add-srch-btn');
+  setBusy(btn, true);
+  try {
+    var snap = await db.collection('users').where('talkerId','==',val).get();
+    setBusy(btn, false, 'Search');
+    if (snap.empty) { msg.style.color='var(--text2)'; msg.textContent='No user found with ID ' + val; return; }
+    var d = snap.docs[0];
+    var data = d.data();
+
+    // FIX: validate uid is non-empty before proceeding
+    if (!d.id) { msg.style.color='var(--red)'; msg.textContent='Invalid user data'; return; }
+
+    if (S.contacts.some(function(c){ return c.id === d.id; })) {
+      msg.style.color='var(--g1)'; msg.textContent='Already in your contacts!'; return;
+    }
+
+    // Store pending contact
+    S.pendingContact = { id: d.id, name: data.name||'Unknown', photoURL: data.photoURL||'', talkerId: data.talkerId||val };
+
+    // Display result card
+    document.getElementById('add-res-av').innerHTML = mkAv(S.pendingContact.photoURL, S.pendingContact.name, 52);
+    document.getElementById('add-res-name').textContent = S.pendingContact.name;
+    document.getElementById('add-res-id').textContent   = 'ID: ' + S.pendingContact.talkerId;
+    res.classList.add('on');
+  } catch(e) {
+    setBusy(btn, false, 'Search');
+    toast('Search error: ' + e.message, 'e');
+  }
+}
+
+async function confirmAddContact() {
+  var c = S.pendingContact;
+  if (!c || !c.id) { toast('No contact selected', 'e'); return; }
+  if (!S.user || !S.profile) { toast('Not signed in', 'e'); return; }
+  try {
+    // Only write to YOUR OWN contacts subcollection — writing to another user's
+    // subcollection requires their Firestore security rules to allow it,
+    // which causes "Missing or insufficient permissions".
+    await db.collection('users').doc(S.user.uid).collection('contacts').doc(c.id).set({
+      name: c.name,
+      photoURL: c.photoURL,
+      talkerId: c.talkerId,
+      addedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('add-result').classList.remove('on');
+    document.getElementById('add-id-inp').value = '';
+    document.getElementById('add-msg').textContent = '';
+    S.pendingContact = null;
+    toast('Contact added!', 's');
+    goPage('contacts');
+  } catch(e) { toast('Error adding: ' + e.message, 'e'); }
+}
+
+// ──────────────────────────────────────────────────────
+// PROFILE
+// ──────────────────────────────────────────────────────
+function renderProfile() {
+  if (!S.profile) return;
+  var p = S.profile;
+  setAv('prof-av', p.photoURL, p.name, 104);
+  var ni = document.getElementById('prof-name');
+  if (ni) { ni.value = p.name||''; ni.dataset.orig = p.name||''; }
+  var em = document.getElementById('prof-email'); if(em) em.textContent = p.email||'';
+  var ti = document.getElementById('prof-tid');
+  if (ti) {
+    if (p.talkerId) {
+      ti.textContent = p.talkerId;
+    } else {
+      ti.textContent = 'Loading…';
+      genUniqueTalkerId().then(function(newTid) {
+        return db.collection('users').doc(S.user.uid).update({ talkerId: newTid }).then(function() {
+          S.profile.talkerId = newTid;
+          var el = document.getElementById('prof-tid');
+          if (el) el.textContent = newTid;
+        });
+      }).catch(function(e) {
+        var el = document.getElementById('prof-tid');
+        if (el) el.textContent = '——————';
+      });
+    }
+  }
+  updateStats();
+}
+function updateStats() {
+  var uid = S.user ? S.user.uid : null;
+  var ec = S.calls.filter(function(c){ return c.status==='ended'&&(c.callerId===uid||c.receiverId===uid); }).length;
+  var sc = document.getElementById('s-calls');    if(sc) sc.textContent = ec;
+  var st = document.getElementById('s-contacts'); if(st) st.textContent = S.contacts.length;
+}
+function startEdit() {
+  var ni = document.getElementById('prof-name');
+  ni.classList.add('edit'); ni.focus(); ni.select();
+  document.getElementById('n-acts').classList.add('on');
+  document.getElementById('pen-btn').style.display = 'none';
+}
+function cancelEdit() {
+  var ni = document.getElementById('prof-name');
+  ni.value = ni.dataset.orig || (S.profile && S.profile.name) || '';
+  ni.classList.remove('edit');
+  document.getElementById('n-acts').classList.remove('on');
+  document.getElementById('pen-btn').style.display = '';
+}
+async function saveName() {
+  var ni = document.getElementById('prof-name');
+  var nm = ni.value.trim();
+  if (!nm) { toast('Name cannot be empty', 'e'); return; }
+  try {
+    await db.collection('users').doc(S.user.uid).update({ name: nm });
+    S.profile.name = nm; ni.dataset.orig = nm; cancelEdit();
+    toast('Name updated!', 's');
+  } catch(e) { toast('Error: '+e.message, 'e'); }
+}
+function nameKey(e) { if(e.key==='Enter') saveName(); if(e.key==='Escape') cancelEdit(); }
+function pickAv()  { document.getElementById('av-file').click(); }
+async function onAvFile(e) {
+  var file = e.target.files[0]; if(!file) return;
+  if (file.size > 400 * 1024) { toast('Image too large — max 400 KB', 'w'); e.target.value=''; return; }
+  var reader = new FileReader();
+  reader.onload = async function(ev) {
+    try {
+      await db.collection('users').doc(S.user.uid).update({ photoURL: ev.target.result });
+      S.profile.photoURL = ev.target.result; renderProfile();
+      toast('Avatar updated!', 's');
+    } catch(err) { toast('Error: '+err.message, 'e'); }
+  };
+  reader.readAsDataURL(file);
+}
+function copyId() {
+  var id = (S.profile && S.profile.talkerId) || '';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(id).then(function(){ toast('ID copied!','s'); }).catch(function(){ fallbackCopy(id); });
+  } else { fallbackCopy(id); }
+}
+function fallbackCopy(t) {
+  var ta = document.createElement('textarea'); ta.value=t;
+  document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); ta.remove();
+  toast('ID copied!','s');
+}
+function confirmSignout() { document.getElementById('so-dlg').classList.add('on'); }
+function closeSoDlg()     { document.getElementById('so-dlg').classList.remove('on'); }
+async function doSignout() {
+  closeSoDlg();
+  if (S.user) await db.collection('users').doc(S.user.uid).update({online:false}).catch(function(){});
+  await auth.signOut();
+}
+function showAbout()  { document.getElementById('ab-modal').classList.add('on'); }
+function closeAbout(e, force) {
+  if (force || (e && e.target===document.getElementById('ab-modal')))
+    document.getElementById('ab-modal').classList.remove('on');
+}
+
+// ──────────────────────────────────────────────────────
+// CALLING — START (FIX: safe uid + name handling)
+// ──────────────────────────────────────────────────────
+async function startCallWithContact(contact, type) {
+  // Guard 1: need user
+  if (!S.user) { toast('Not signed in', 'e'); return; }
+  // Guard 2: load profile if missing
+  if (!S.profile) {
+    await loadProfile(S.user.uid);
+    if (!S.profile) { toast('Profile not loaded, try again', 'e'); return; }
+  }
+  // Guard 3: FIX — validate contact id is a non-empty string
+  var receiverId = contact && contact.id ? String(contact.id) : '';
+  if (!receiverId) { toast('Invalid contact — no user ID', 'e'); return; }
+  // Guard 4: only one call at a time
+  if (S.callId) { toast('Already in a call', 'w'); return; }
+
+  var channel = 'txy_' + Date.now();
+  var callId  = db.collection('calls').doc().id;
+  S.callId = callId;
+
+  // Sanitize all fields — Firestore rejects undefined
+  var callerName    = String(S.profile.name    || 'Unknown');
+  var callerAvatar  = String(S.profile.photoURL || '');
+  var receiverName  = String(contact.name   || 'Unknown');
+  var receiverAvatar= String(contact.photoURL || '');
+
+  // Show outgoing UI
+  setAv('out-av', contact.photoURL, contact.name, 104);
+  document.getElementById('out-name').textContent = receiverName;
+  document.getElementById('out-type').textContent = type==='video' ? 'Video Call' : 'Audio Call';
+  document.getElementById('out-call').classList.add('on');
+
+  try {
+    // Write call doc
+    await db.collection('calls').doc(callId).set({
+      callerId:       S.user.uid,
+      receiverId:     receiverId,
+      callerName:     callerName,
+      callerAvatar:   callerAvatar,
+      receiverName:   receiverName,
+      receiverAvatar: receiverAvatar,
+      channelName:    channel,
+      type:           type,
+      status:         'ringing',
+      duration:       0,
+      createdAt:      firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Signal receiver
+    await db.collection('callingIds').doc(receiverId).set({
+      callId:      callId,
+      callerId:    S.user.uid,
+      callerName:  callerName,
+      callerAvatar:callerAvatar,
+      channelName: channel,
+      type:        type,
+      status:      'ringing'
+    });
+
+    // Listen for accept/decline
+    S.callDocUnsub = db.collection('calls').doc(callId).onSnapshot(function(snap) {
+      if (!snap.exists) return;
+      var d = snap.data();
+      if (d.status === 'accepted') {
+        clearTimeout(S.outTimeoutId);
+        document.getElementById('out-call').classList.remove('on');
+        joinAgora(channel, type, receiverName, receiverAvatar, callId);
+      } else if (d.status === 'declined') {
+        clearTimeout(S.outTimeoutId);
+        document.getElementById('out-call').classList.remove('on');
+        S.callId = null;
+        if (S.callDocUnsub) { S.callDocUnsub(); S.callDocUnsub=null; }
+        toast('Call declined', 'i');
+      } else if (d.status === 'ended') {
+        clearTimeout(S.outTimeoutId);
+        document.getElementById('out-call').classList.remove('on');
+        S.callId = null;
+        if (S.callDocUnsub) { S.callDocUnsub(); S.callDocUnsub=null; }
+      }
+    });
+
+    // 30s timeout
+    S.outTimeoutId = setTimeout(async function() {
+      if (S.callId === callId) {
+        document.getElementById('out-call').classList.remove('on');
+        await db.collection('calls').doc(callId).update({status:'missed'}).catch(function(){});
+        await db.collection('callingIds').doc(receiverId).delete().catch(function(){});
+        S.callId = null;
+        if (S.callDocUnsub) { S.callDocUnsub(); S.callDocUnsub=null; }
+        toast('No answer', 'i');
+      }
+    }, 30000);
+
+  } catch(e) {
+    document.getElementById('out-call').classList.remove('on');
+    S.callId = null;
+    toast('Could not start call: ' + e.message, 'e');
+  }
+}
+
+function cancelOutgoing() {
+  clearTimeout(S.outTimeoutId);
+  document.getElementById('out-call').classList.remove('on');
+  if (S.callId) {
+    var id = S.callId; S.callId = null;
+    if (S.callDocUnsub) { S.callDocUnsub(); S.callDocUnsub=null; }
+    db.collection('calls').doc(id).get().then(function(s){
+      if (!s.exists) return;
+      db.collection('calls').doc(id).update({status:'ended'}).catch(function(){});
+      var rid = s.data().receiverId;
+      if (rid) db.collection('callingIds').doc(rid).delete().catch(function(){});
+    });
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// INCOMING
+// ──────────────────────────────────────────────────────
+function showIncoming(data) {
+  S.incomingData = data;
+  setAv('inc-av', data.callerAvatar||'', data.callerName||'?', 104);
+  document.getElementById('inc-name').textContent = data.callerName || 'Unknown';
+  var isV = data.type==='video' || data.type==='group-video';
+  document.getElementById('inc-type').textContent = isV ? 'Incoming Video Call' : 'Incoming Audio Call';
+  document.getElementById('inc-call').classList.add('on');
+  startRingtone();
+  clearTimeout(S.declineTimeoutId);
+  S.declineTimeoutId = setTimeout(function(){ if(S.incomingData) declineCall(); }, 30000);
+}
+function hideIncoming() {
+  document.getElementById('inc-call').classList.remove('on');
+  S.incomingData = null; stopRingtone();
+  clearTimeout(S.declineTimeoutId);
+}
+async function acceptCall() {
+  if (!S.incomingData) return;
+  var data = S.incomingData;
+  stopRingtone(); clearTimeout(S.declineTimeoutId);
+  document.getElementById('inc-call').classList.remove('on');
+  S.callId = data.callId;
+  try {
+    await db.collection('calls').doc(data.callId).update({status:'accepted'});
+    await db.collection('callingIds').doc(S.user.uid).delete().catch(function(){});
+    S.incomingData = null;
+    joinAgora(data.channelName, data.type, data.callerName||'Unknown', data.callerAvatar||'', data.callId);
+  } catch(e) {
+    toast('Could not accept: '+e.message,'e');
+    S.callId=null; S.incomingData=null;
+  }
+}
+async function declineCall() {
+  if (!S.incomingData) return;
+  var data = S.incomingData; S.incomingData=null;
+  stopRingtone(); clearTimeout(S.declineTimeoutId);
+  document.getElementById('inc-call').classList.remove('on');
+  await db.collection('calls').doc(data.callId).update({status:'declined'}).catch(function(){});
+  await db.collection('callingIds').doc(S.user.uid).delete().catch(function(){});
+}
+
+// ──────────────────────────────────────────────────────
+// AGORA
+// ──────────────────────────────────────────────────────
+async function joinAgora(channel, type, cName, cPhoto, callId) {
+  var isV = type==='video' || type==='group-video';
+  var remEl   = document.getElementById('vc-rem');
+  var audioEl = document.getElementById('vc-audio');
+  var pipEl   = document.getElementById('vc-pip');
+
+  document.getElementById('vc-cn').textContent    = cName;
+  document.getElementById('vc-aname').textContent = cName;
+  setAv('vc-av', cPhoto, cName, 120);
+  document.getElementById('vc-ended').classList.remove('on');
+  document.getElementById('vc-time').textContent = '00:00';
+
+  // Clear old remote divs
+  Array.from(remEl.children).forEach(function(c){ if(c.id!=='vc-audio') c.remove(); });
+
+  audioEl.style.display = isV ? 'none' : 'flex';
+  pipEl.style.display   = isV ? 'block' : 'none';
+  document.getElementById('c-cam').style.display = isV ? '' : 'none';
+
+  document.getElementById('vc').classList.add('on');
+  startTimer(); startSigAnim();
+  setupVcTapToToggle();
+
+  try {
+    if (!S.client) S.client = AgoraRTC.createClient({mode:'rtc',codec:'h264'});
+    S.remoteUsers = {};
+
+    S.client.on('user-published', async function(user, mt) {
+      await S.client.subscribe(user, mt);
+      if (mt === 'video') {
+        S.remoteUsers[user.uid] = user;
+        var div = document.createElement('div');
+        div.id = 'rv_'+user.uid; div.style.cssText='position:absolute;inset:0;';
+        remEl.appendChild(div);
+        user.videoTrack.play('rv_'+user.uid);
+        audioEl.style.display='none';
+      }
+      if (mt === 'audio') user.audioTrack.play();
+    });
+    S.client.on('user-unpublished', function(user, mt) {
+      if (mt==='video') { var d=document.getElementById('rv_'+user.uid); if(d) d.remove(); delete S.remoteUsers[user.uid]; }
+    });
+    S.client.on('user-left', function(user) {
+      var d=document.getElementById('rv_'+user.uid); if(d) d.remove();
+      delete S.remoteUsers[user.uid];
+      setTimeout(endCall, 600);
+    });
+    S.client.on('network-quality', function(s){ updateSig(s.uplinkNetworkQuality); });
+
+    await S.client.join(AGORA_APP_ID, channel, null, Math.floor(Math.random()*999999));
+
+    // ── Ultra HD Audio config: 48 kHz stereo, max bitrate, full noise/echo processing ──
+    var AUDIO_CFG = {
+      encoderConfig: {
+        sampleRate:    48000,
+        stereo:        true,
+        bitrate:       128
+      },
+      AEC:             true,   // Acoustic Echo Cancellation
+      AGC:             true,   // Automatic Gain Control
+      ANS:             true,   // Ambient Noise Suppression
+    };
+
+    // ── Ultra HD Video config: 1080p @ 30 fps, max bitrate 2500 kbps ──
+    var VIDEO_CFG = {
+      encoderConfig: {
+        width:         { ideal: 1920, min: 1280 },
+        height:        { ideal: 1080, min: 720 },
+        frameRate:     { ideal: 30,   min: 24  },
+        bitrateMax:    2500,
+        bitrateMin:    800,
+      },
+      optimizationMode: 'detail',   // prioritise sharpness/clarity over motion
+    };
+
+    if (isV) {
+      try {
+        var tracks = await AgoraRTC.createMicrophoneAndCameraTracks(AUDIO_CFG, VIDEO_CFG);
+        S.micTrack=tracks[0]; S.vidTrack=tracks[1];
+        pipEl.innerHTML=''; S.vidTrack.play(pipEl);
+        await S.client.publish([S.micTrack, S.vidTrack]);
+      } catch(e) {
+        toast('Camera denied — audio only', 'w');
+        pipEl.style.display='none';
+        try {
+          S.micTrack = await AgoraRTC.createMicrophoneAudioTrack(AUDIO_CFG);
+          await S.client.publish([S.micTrack]);
+        }
+        catch(e2){ toast('Mic denied','e'); }
+      }
+    } else {
+      try {
+        S.micTrack = await AgoraRTC.createMicrophoneAudioTrack(AUDIO_CFG);
+        await S.client.publish([S.micTrack]);
+      }
+      catch(e){ toast('Mic access denied','w'); }
+    }
+
+    if (isV) setupPipDrag();
+  } catch(e) {
+    console.error('Agora join error:', e);
+    toast('Could not join call: '+e.message, 'e');
+    document.getElementById('vc').classList.remove('on');
+    stopTimer(); stopSigAnim(); S.callId=null;
+  }
+}
+
+async function endCall() {
+  var dur = S.callDur;
+  stopTimer(); stopSigAnim();
+  teardownVcTapToToggle();
+  document.getElementById('vc-ended').classList.add('on');
+  document.getElementById('ve-dur').textContent = dur>0 ? fmtDur(dur) : 'Call ended';
+  try {
+    if (S.micTrack){ S.micTrack.stop(); S.micTrack.close(); S.micTrack=null; }
+    if (S.vidTrack){ S.vidTrack.stop(); S.vidTrack.close(); S.vidTrack=null; }
+    if (S.client) await S.client.leave();
+  } catch(e){ console.warn('Agora leave:',e); }
+  if (S.callId) {
+    db.collection('calls').doc(S.callId).update({status:'ended',duration:dur}).catch(function(){});
+    if (S.user) db.collection('callingIds').doc(S.user.uid).delete().catch(function(){});
+  }
+  if (S.callDocUnsub){ S.callDocUnsub(); S.callDocUnsub=null; }
+  S.callId=null; S.remoteUsers={};
+  setTimeout(function(){
+    document.getElementById('vc').classList.remove('on');
+    document.getElementById('vc-ended').classList.remove('on');
+    var pip=document.getElementById('vc-pip');
+    pip.innerHTML='<div id="vc-pip-ph" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>';
+    S.micMuted=false; S.camOff=false; S.spkOn=false;
+    var mi=document.getElementById('mic-i'); if(mi) mi.classList.add('act');
+    var ci=document.getElementById('cam-i'); if(ci) ci.classList.add('act');
+    var si=document.getElementById('spk-i'); if(si) si.classList.remove('act');
+    var ml=document.getElementById('mic-l'); if(ml){ml.textContent='Mic';ml.className='ctrl-l gold';}
+    var cl=document.getElementById('cam-l'); if(cl){cl.textContent='Camera';cl.className='ctrl-l gold';}
+    var sl=document.getElementById('spk-l'); if(sl){sl.textContent='Speaker';sl.className='ctrl-l';}
+  }, 2200);
+}
+
+// CALL CONTROLS
+async function toggleMic() {
+  S.micMuted = !S.micMuted;
+  if (S.micTrack) await S.micTrack.setEnabled(!S.micMuted).catch(function(){});
+  var i=document.getElementById('mic-i'), l=document.getElementById('mic-l');
+  i.classList.toggle('act', !S.micMuted);
+  if (S.micMuted) {
+    i.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+    l.textContent='Muted'; l.className='ctrl-l';
+  } else {
+    i.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
+    l.textContent='Mic'; l.className='ctrl-l gold';
+  }
+}
+async function toggleCam() {
+  S.camOff = !S.camOff;
+  if (S.vidTrack) await S.vidTrack.setEnabled(!S.camOff).catch(function(){});
+  var i=document.getElementById('cam-i'), l=document.getElementById('cam-l');
+  i.classList.toggle('act', !S.camOff);
+  if (S.camOff) {
+    i.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34m-7.72-2.06a4 4 0 1 1-5.56-5.56"/></svg>';
+    l.textContent='Cam Off'; l.className='ctrl-l';
+  } else {
+    i.innerHTML='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+    l.textContent='Camera'; l.className='ctrl-l gold';
+  }
+}
+function toggleSpk() {
+  S.spkOn = !S.spkOn;
+  document.getElementById('spk-i').classList.toggle('act', S.spkOn);
+  document.getElementById('spk-l').className = 'ctrl-l' + (S.spkOn?' gold':'');
+}
+async function flipCam() {
+  if (!S.vidTrack || !S.client) return;
+  try {
+    // Get all video input devices
+    var devs = await AgoraRTC.getDevices();
+    var cams = devs.filter(function(d){ return d.kind === 'videoinput'; });
+    if (cams.length < 2) { toast('No other camera available', 'i'); return; }
+
+    // Find the next camera (not the current one)
+    var curLabel = S.vidTrack.getTrackLabel();
+    var nextCam = cams.find(function(c){ return c.label !== curLabel; }) || cams[0];
+    if (nextCam.deviceId === S.vidTrack._deviceName) { toast('Already on this camera', 'i'); return; }
+
+    S._flipping = true;
+
+    // 1. Unpublish + stop + close the current video track
+    await S.client.unpublish([S.vidTrack]).catch(function(){});
+    S.vidTrack.stop();
+    S.vidTrack.close();
+    S.vidTrack = null;
+
+    // 2. Create a fresh track with the new camera deviceId at Ultra HD
+    var newVid = await AgoraRTC.createCameraVideoTrack({
+      deviceId: nextCam.deviceId,
+      encoderConfig: {
+        width:         { ideal: 1920, min: 1280 },
+        height:        { ideal: 1080, min: 720 },
+        frameRate:     { ideal: 30,   min: 24  },
+        bitrateMax:    2500,
+        bitrateMin:    800,
+      },
+      optimizationMode: 'detail',
+    });
+    S.vidTrack = newVid;
+
+    // 3. Re-play local preview in the PiP container
+    var pipEl = document.getElementById('vc-pip');
+    pipEl.innerHTML = '';           // clear old video element
+    S.vidTrack.play(pipEl);         // inject fresh video element
+
+    // 4. Re-publish to the channel
+    await S.client.publish([S.vidTrack]);
+
+    S._flipping = false;
+    toast('Camera switched', 'i');
+  } catch(e) {
+    S._flipping = false;
+    toast('Flip failed: ' + e.message, 'e');
+  }
+}
+
+// ──────────────────────────────────────────────────────
+// TIMER + SIGNAL
+// ──────────────────────────────────────────────────────
+function startTimer() {
+  S.callDur=0; S.callStart=Date.now();
+  S.timerInt=setInterval(function(){
+    S.callDur=Math.floor((Date.now()-S.callStart)/1000);
+    var el=document.getElementById('vc-time'); if(el) el.textContent=fmtDur(S.callDur);
+  },1000);
+}
+function stopTimer(){ if(S.timerInt){clearInterval(S.timerInt);S.timerInt=null;} }
+function startSigAnim(){ S.sigInt=setInterval(function(){updateSig(Math.ceil(Math.random()*3));},4000); }
+function stopSigAnim(){ if(S.sigInt){clearInterval(S.sigInt);S.sigInt=null;} }
+function updateSig(q) {
+  document.querySelectorAll('#vc-sig .sb').forEach(function(b,i){ b.classList.toggle('on',i<(4-Math.min(q,3))); });
+}
+
+// ──────────────────────────────────────────────────────
+// VIDEO CALL UI AUTO-HIDE (WhatsApp-style)
+// ──────────────────────────────────────────────────────
+var _vcAutoHideTimer = null;
+
+function vcShowUI() {
+  var vc = document.getElementById('vc');
+  vc.classList.remove('ui-hidden');
+  // PiP shifts up when controls are visible
+  var pip = document.getElementById('vc-pip');
+  if (pip) pip.classList.remove('controls-hidden');
+  // Reset the auto-hide countdown
+  clearTimeout(_vcAutoHideTimer);
+  _vcAutoHideTimer = setTimeout(vcHideUI, 2000);
+}
+
+function vcHideUI() {
+  clearTimeout(_vcAutoHideTimer);
+  _vcAutoHideTimer = null;
+  var vc = document.getElementById('vc');
+  vc.classList.add('ui-hidden');
+  // PiP drops to bottom when controls hidden
+  var pip = document.getElementById('vc-pip');
+  if (pip) pip.classList.add('controls-hidden');
+}
+
+function vcToggleUI() {
+  var vc = document.getElementById('vc');
+  if (vc.classList.contains('ui-hidden')) {
+    vcShowUI();
+  } else {
+    vcHideUI();
+  }
+}
+
+function setupVcTapToToggle() {
+  var vc = document.getElementById('vc');
+  // Remove any prior listener
+  if (vc._tapHandler) vc.removeEventListener('click', vc._tapHandler);
+  vc._tapHandler = function(e) {
+    // Don't toggle if tapping a real button/control
+    var tag = e.target.tagName.toLowerCase();
+    if (tag === 'button' || e.target.closest('.ctrl') || e.target.closest('#vc-pip') || e.target.closest('.vc-ended')) return;
+    vcToggleUI();
+  };
+  vc.addEventListener('click', vc._tapHandler);
+  // Start shown, then auto-hide after 2s
+  vcShowUI();
+}
+
+function teardownVcTapToToggle() {
+  clearTimeout(_vcAutoHideTimer);
+  _vcAutoHideTimer = null;
+  var vc = document.getElementById('vc');
+  if (vc._tapHandler) { vc.removeEventListener('click', vc._tapHandler); vc._tapHandler = null; }
+  vc.classList.remove('ui-hidden');
+  var pip = document.getElementById('vc-pip');
+  if (pip) pip.classList.remove('controls-hidden');
+}
+
+// ──────────────────────────────────────────────────────
+// PiP DRAG
+// ──────────────────────────────────────────────────────
+function setupPipDrag() {
+  var pip=document.getElementById('vc-pip');
+  var drag=false,sx,sy,ox,oy;
+  pip.addEventListener('touchstart',function(e){ drag=true; var t=e.touches[0]; sx=t.clientX; sy=t.clientY; var r=pip.getBoundingClientRect(); ox=r.left; oy=r.top; e.preventDefault(); },{passive:false});
+  pip.addEventListener('touchmove',function(e){ if(!drag)return; var t=e.touches[0]; pip.style.left=(ox+t.clientX-sx)+'px'; pip.style.top=(oy+t.clientY-sy)+'px'; pip.style.right='auto'; pip.style.bottom='auto'; e.preventDefault(); },{passive:false});
+  pip.addEventListener('touchend',function(){ drag=false; });
+  pip.addEventListener('mousedown',function(e){ drag=true; sx=e.clientX; sy=e.clientY; var r=pip.getBoundingClientRect(); ox=r.left; oy=r.top; });
+  document.addEventListener('mousemove',function(e){ if(!drag)return; pip.style.left=(ox+e.clientX-sx)+'px'; pip.style.top=(oy+e.clientY-sy)+'px'; pip.style.right='auto'; pip.style.bottom='auto'; });
+  document.addEventListener('mouseup',function(){ drag=false; });
+}
+
+// ──────────────────────────────────────────────────────
+// GROUP CALLS
+// ──────────────────────────────────────────────────────
+function showGrpModal() {
+  if (!S.contacts.length){ toast('No contacts for group call','i'); return; }
+  S.grpSelected=[];
+  document.getElementById('grp-list').innerHTML=S.contacts.map(function(c){
+    return '<div class="chk-row" onclick="toggleGrp(\''+esc(c.id)+'\')">'
+      +mkAv(c.photoURL,c.name,44)
+      +'<div style="flex:1;"><div style="font-size:15px;font-weight:600;">'+esc(c.name||'Unknown')+'</div><div style="font-size:12px;color:var(--text3);">ID: '+esc(c.talkerId||'——')+'</div></div>'
+      +'<div class="chk-c" id="gc-'+esc(c.id)+'"></div>'
+      +'</div>';
+  }).join('');
+  document.getElementById('grp-modal').classList.add('on');
+}
+function toggleGrp(uid) {
+  var idx=S.grpSelected.indexOf(uid);
+  var el=document.getElementById('gc-'+uid);
+  if(idx===-1){
+    S.grpSelected.push(uid); el.classList.add('on');
+    el.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  }else{
+    S.grpSelected.splice(idx,1); el.classList.remove('on'); el.innerHTML='';
+  }
+}
+async function startGrpCall(type) {
+  if (!S.grpSelected.length){ toast('Select at least one contact','w'); return; }
+  if (!S.profile){ toast('Profile not loaded','e'); return; }
+  document.getElementById('grp-modal').classList.remove('on');
+  var channel='txy_grp_'+Date.now();
+  var callId=db.collection('calls').doc().id;
+  S.callId=callId;
+  try {
+    await db.collection('calls').doc(callId).set({
+      callerId:S.user.uid, receiverIds:S.grpSelected,
+      callerName:String(S.profile.name||'Unknown'),
+      callerAvatar:String(S.profile.photoURL||''),
+      channelName:channel, type:'group-'+type, status:'ringing', duration:0,
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    for(var i=0;i<S.grpSelected.length;i++){
+      await db.collection('callingIds').doc(S.grpSelected[i]).set({
+        callId:callId, callerId:S.user.uid,
+        callerName:String(S.profile.name||'Unknown'),
+        callerAvatar:String(S.profile.photoURL||''),
+        channelName:channel, type:'group-'+type, status:'ringing'
+      });
+    }
+    joinAgora(channel,'group-'+type,'Group Call','',callId);
+  } catch(e){ toast('Error: '+e.message,'e'); S.callId=null; }
+}
+function closeGrpModal(e,force){
+  if(force||(e&&e.target===document.getElementById('grp-modal')))
+    document.getElementById('grp-modal').classList.remove('on');
+}
+
+// ──────────────────────────────────────────────────────
+// RINGTONE
+// ──────────────────────────────────────────────────────
+function startRingtone() {
+  try {
+    if (!S.audioCtx) S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    var ctx=S.audioCtx;
+    function boop(f,d){ var o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value=f; o.type='sine'; var t=ctx.currentTime+d; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.55,t+0.04); g.gain.exponentialRampToValueAtTime(0.001,t+0.45); o.start(t); o.stop(t+0.5); }
+    function ring(){ boop(880,0); boop(1100,0.25); }
+    ring(); S.ringtoneId=setInterval(ring,1200);
+  } catch(e){}
+}
+function stopRingtone(){ if(S.ringtoneId){clearInterval(S.ringtoneId);S.ringtoneId=null;} }
+
+// ──────────────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────────────
+function mkAv(photo, name, size) {
+  var s=size+'px', ini=initials(name||'?'), fs=Math.floor(size/2.6)+'px';
+  if (photo) return '<div class="av" style="width:'+s+';height:'+s+';font-size:'+fs+';background:none;"><img src="'+esc(photo)+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.style.background=\'\';this.parentElement.textContent=\''+ini.replace(/'/g,"\\'")+'\';" /></div>';
+  return '<div class="av" style="width:'+s+';height:'+s+';font-size:'+fs+';">'+ini+'</div>';
+}
+
+function setAv(id, photo, name, size) {
+  var el=document.getElementById(id); if(!el) return;
+  el.innerHTML=''; el.style.width=size+'px'; el.style.height=size+'px'; el.style.fontSize=Math.floor(size/2.6)+'px';
+  if (photo) {
+    el.style.background='none';
+    var img=document.createElement('img');
+    img.src=photo; img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;';
+    img.onerror=function(){ el.style.background=''; el.textContent=initials(name||'?'); };
+    el.appendChild(img);
+  } else { el.style.background=''; el.textContent=initials(name||'?'); }
+}
+
+function initials(name) {
+  if (!name) return '?';
+  var p=name.trim().split(/\s+/);
+  return p.length===1 ? p[0][0].toUpperCase() : (p[0][0]+p[p.length-1][0]).toUpperCase();
+}
+function esc(s) {
+  if (s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function fmtDur(s) { var m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+function timeAgo(date) {
+  if (!date) return '';
+  var d=(Date.now()-date.getTime())/1000;
+  if(d<60) return 'just now';
+  if(d<3600) return Math.floor(d/60)+'m ago';
+  if(d<86400) return Math.floor(d/3600)+'h ago';
+  if(d<604800) return Math.floor(d/86400)+'d ago';
+  return date.toLocaleDateString();
+}
+
+// ──────────────────────────────────────────────────────
+// INIT (all in one IIFE — no external variable references)
+// ──────────────────────────────────────────────────────
+(function() {
+  applyTheme(S.theme);
+  setTimeout(function() {
+    var splEl = document.getElementById('splash');
+    splEl.style.transition = 'opacity 0.5s ease';
+    splEl.style.opacity = '0';
+    setTimeout(function() {
+      splEl.style.opacity = '';
+      splEl.style.transition = '';
+      splEl.classList.remove('show');
+      // Only show auth if not yet signed in (onAuthStateChanged handles the rest)
+      if (!auth.currentUser) {
+        document.getElementById('auth').classList.add('show');
+      }
+    }, 500);
+  }, 2200);
+})();
+</script>
+</body>
+</html>
